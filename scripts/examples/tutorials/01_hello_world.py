@@ -26,7 +26,7 @@ def main():
     args = anki_vector.util.parse_command_args()
     with anki_vector.Robot(args.serial) as robot:
         print("Say 'Hello World'...")
-        robot.say_text("Hello World")
+        robot.say_text("I will think about it.")
 
 
 if __name__ == "__main__":
