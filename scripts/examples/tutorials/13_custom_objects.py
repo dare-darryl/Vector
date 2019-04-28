@@ -54,6 +54,10 @@ def main():
         # Add event handlers for whenever Vector sees a new object
         robot.events.subscribe(handle_object_appeared, anki_vector.events.Events.object_appeared)
         robot.events.subscribe(handle_object_disappeared, anki_vector.events.Events.object_disappeared)
+		
+        robot.world.connect_cube()
+        if robot.world.connected_light_cube:
+            cube = robot.world.connected_light_cube
 
         # define a unique cube (44mm x 44mm x 44mm) (approximately the same size as Vector's light cube)
         # with a 50mm x 50mm Circles2 image on every face. Note that marker_width_mm and marker_height_mm

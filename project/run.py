@@ -1,8 +1,11 @@
 import anki_vector
 from anki_vector.util import degrees, distance_mm, speed_mmps, Pose
+from anki_vector.objects import CustomObjectMarkers, CustomObjectTypes, LightCube
 from OpenGL.GL import *
 import time
 import math
+
+found_cube = False
 
 class SearchNode():
     def __init__(self, x, y):
@@ -22,7 +25,7 @@ def scan(robot: anki_vector.robot.Robot):
     
 def get_surrounding_nodes(robot: anki_vector.robot.Robot):
     print('get surrounding nodes')
-    search_point = 50
+    search_point = 100
     distance = 150
     angle_incre = 6.283 / search_point
     
@@ -61,7 +64,7 @@ def get_explorable_nodes(robot: anki_vector.robot.Robot, explorable, explored):
 
 def node_fits_robot(node: SearchNode, robot: anki_vector.robot.Robot):
     curr_map = robot.nav_map.latest_nav_map
-    robot_size = 60
+    robot_size = 65
     
     # Check the four directions of the robot
     eval_x = node.x + robot_size
@@ -126,7 +129,17 @@ def print_exp(explorable):
         print('(', e.x,',', e.y, ')')
 
 
+def handle_object_appeared(event_type, event):
+    # This will be called whenever an EvtObjectAppeared is dispatched -
+    # whenever an Object comes into view.
+    if(isinstance(event.obj, LightCube)):
+        print('I found cube!')
+        global found_cube 
+        found_cube = True
+
+
 def explore(robot, explorable, explored):
+    connect_cube(robot)
     scan(robot)
 
     posi = robot.pose.position
@@ -136,22 +149,42 @@ def explore(robot, explorable, explored):
 
     print('==============================================')
     print_exp(explorable)
+
+
+def connect_cube(robot: anki_vector.robot.Robot):
+    robot.world.connect_cube()
+    while not robot.world.connected_light_cube:
+        print('Cube not found. Retrying...')
+        time.sleep(0.5)
+        robot.world.connect_cube()
+
     
 
 def main():
     robot = anki_vector.Robot(
-                       enable_nav_map_feed=True)
+                       enable_nav_map_feed=True,
+                       show_3d_viewer=True)
     robot.connect()
     robot.nav_map.init_nav_map_feed(frequency=0.5)
-    robot.behavior.drive_off_charger()
+
+    # initialize target
+    connect_cube(robot)
+    global found_cube
+
+    # initialize cube listener
+    robot.events.subscribe(handle_object_appeared, anki_vector.events.Events.object_appeared)
 
     # initialize stacks
     explored = []
     explorable = []
 
+    robot.behavior.drive_off_charger()
     explore(robot, explorable, explored)
 
     while (explorable):
+        if (found_cube):
+            print('roger cube found')
+            break
         new_loc = explorable.pop()
         drive_to(new_loc, robot)
         explore(robot, explorable, explored)
@@ -160,18 +193,6 @@ def main():
     robot.behavior.drive_on_charger()
     robot.disconnect()
     
-
-
-class Content:
-    NO_CLIFF = 2
-    NO_OBSTABLE = 1
-    CLIFF = 7
-    INTERESTING_EDGE = 8
-    OBSTACLE_CUBE = 3
-    OBSTACLE_PROXIMITY = 4
-    OBSTACLE_PROXIMITY_EXPLORED = 5
-    OBSTACLE_UNRECOGNIZED = 6
-    UNKNOWN = 0
 
 
 if __name__ == "__main__":
