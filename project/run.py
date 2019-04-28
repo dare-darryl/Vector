@@ -64,7 +64,7 @@ def get_explorable_nodes(robot: anki_vector.robot.Robot, explorable, explored):
 
 def node_fits_robot(node: SearchNode, robot: anki_vector.robot.Robot):
     curr_map = robot.nav_map.latest_nav_map
-    robot_size = 65
+    robot_size = 75
     
     # Check the four directions of the robot
     eval_x = node.x + robot_size
@@ -184,6 +184,8 @@ def main():
     while (explorable):
         if (found_cube):
             print('roger cube found')
+            robot.anim.play_animation('anim_pounce_success_03')
+            robot.anim.play_animation('anim_spinner_tap_01')
             break
         new_loc = explorable.pop()
         drive_to(new_loc, robot)
