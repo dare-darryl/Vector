@@ -5,8 +5,12 @@ from OpenGL.GL import *
 import time
 import math
 
+# Global variable
 found_cube = False
 
+'''
+SearchNode object contains the x and y coordinates of a location in the map
+'''
 class SearchNode():
     def __init__(self, x, y):
         self.x = x
@@ -18,11 +22,17 @@ class SearchNode():
     def get_y(self):
         return self.y
 
+'''
+Makes the robot turn one round
+'''
 def scan(robot: anki_vector.robot.Robot):
     print('scanning')
     time_scan = 10.0
     robot.behavior.turn_in_place(angle=degrees(360.0), speed=degrees(360.0 / time_scan))
     
+'''
+Calculates and returns SearchNodes that surrounds the robot in a circle
+'''
 def get_surrounding_nodes(robot: anki_vector.robot.Robot):
     print('get surrounding nodes')
     search_point = 100
@@ -46,6 +56,9 @@ def get_surrounding_nodes(robot: anki_vector.robot.Robot):
         
     return surrounding # So the frontiest node gets to the top of the stack
     
+'''
+Gets a list of SearchNode that is explorable by the robot
+'''
 def get_explorable_nodes(robot: anki_vector.robot.Robot, explorable, explored):
     candidate_nodes = get_surrounding_nodes(robot)
     robot.nav_map.init_nav_map_feed(frequency=0.5)
@@ -61,7 +74,9 @@ def get_explorable_nodes(robot: anki_vector.robot.Robot, explorable, explored):
                 
     return explorable
             
-
+'''
+Checks if a SearchNode contains enough space to fit the robot
+'''
 def node_fits_robot(node: SearchNode, robot: anki_vector.robot.Robot):
     curr_map = robot.nav_map.latest_nav_map
     robot_size = 75
@@ -89,6 +104,9 @@ def node_fits_robot(node: SearchNode, robot: anki_vector.robot.Robot):
     
     return True
 
+'''
+Checks if the given SearchNode was explored by Vector before.
+'''
 def node_explored(node: SearchNode, explored_nodes, robot: anki_vector.robot.Robot):
     radius = 149
     curr_map = robot.nav_map.latest_nav_map
@@ -101,11 +119,17 @@ def node_explored(node: SearchNode, explored_nodes, robot: anki_vector.robot.Rob
     
     return False
 
+'''
+Calculates the angle between sourch and destination
+'''
 def get_angle_from_to(source: SearchNode, dest: SearchNode):
     x = dest.x - source.x
     y = dest.y - source.y
     return math.atan2(y , x)
 
+'''
+Requests Vector to drive to the location of the supplied SearchNode
+'''
 def drive_to(dest: SearchNode, robot: anki_vector.robot.Robot):
     posi = robot.pose.position
     angle = get_angle_from_to(SearchNode(posi.x, posi.y), dest)
@@ -115,7 +139,9 @@ def drive_to(dest: SearchNode, robot: anki_vector.robot.Robot):
     pose = Pose(x=dest.x, y=dest.y, z=0, angle_z=anki_vector.util.Angle(radians=angle))
     robot.behavior.go_to_pose(pose)
     
-    
+'''
+Remove explorable nodes if it has been explored before
+'''
 def clear_explorables(explorable, explored, robot):
     before = len(explorable)
     explorable[:] = [candidate for candidate in explorable if not node_explored(candidate, explored, robot)]
@@ -123,12 +149,16 @@ def clear_explorables(explorable, explored, robot):
 
     print(str(before - after), 'nodes cleared.')
     
-
+'''
+Prints a list of all explorable nodes
+'''
 def print_exp(explorable):
     for e in explorable:
         print('(', e.x,',', e.y, ')')
 
-
+'''
+Listener for when an object appears
+'''
 def handle_object_appeared(event_type, event):
     # This will be called whenever an EvtObjectAppeared is dispatched -
     # whenever an Object comes into view.
@@ -137,7 +167,9 @@ def handle_object_appeared(event_type, event):
         global found_cube 
         found_cube = True
 
-
+'''
+Explore the space!
+'''
 def explore(robot, explorable, explored):
     connect_cube(robot)
     scan(robot)
@@ -150,7 +182,10 @@ def explore(robot, explorable, explored):
     print('==============================================')
     print_exp(explorable)
 
-
+'''
+Connects to the cube. Cube must remain connected for the robot
+to visually identify it. (Unfortunately unintuitive)
+'''
 def connect_cube(robot: anki_vector.robot.Robot):
     robot.world.connect_cube()
     while not robot.world.connected_light_cube:
