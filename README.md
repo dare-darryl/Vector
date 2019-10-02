@@ -5,4 +5,4 @@ Searching for things
 Initializing
 
 ## Language
-Pythong with Vector SDK
+Python with Vector SDK
